@@ -71,11 +71,40 @@ class DataTable:
             f.write("};")
 
 
+def parse_simple(img, shape, utf8_codepoint, colors):
+    if colors != 2:
+        sys.exit("called simple parse for non-binary colors")
+
+    flat_image = img[:, :].reshape((shape[0] * shape[1]))
+
+    padded = np.pad(flat_image,(0,(flat_image.size)%8),'constant')
+    byte_list = padded.astype(np.uint8)
+
+    color_mode = "SPRITE_" + str(colors) + "_COLORS"
+
+    return (
+        FontMetadata(
+            utf8_codepoint,
+            shape[1],
+            shape[0],
+            color_mode,
+            len(byte_list),
+        ),
+        byte_list,
+    )
+
+
 def parse_file(image_path, utf8_codepoint, colors):
     img = np.array(Image.open(image_path))
 
     # img[:,:,:3] is img without alpha channel
     shape = img.shape
+
+    #NEW
+    if len(shape) == 2:
+        return parse_simple(img, shape, utf8_codepoint, colors)
+    #ENDNEW
+
     flat_image = img[:, :, :3].reshape((shape[0] * shape[1], 3))
 
     # If space character, skip clustering, return all zeros
